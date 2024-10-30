@@ -5,6 +5,4 @@ streamlit
 streamlit-authenticator
 pathlib 
 pymongo 
-urllib
-urllib.parse
 datetime
