@@ -2,7 +2,7 @@ openpyxl
 pandas
 plotly
 streamlit
-streamlit-authenticator
+streamlit-authenticator == 0.3.3
 pathlib 
 pymongo 
 datetime
