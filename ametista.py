@@ -30,7 +30,7 @@ credentials = {
     }
 }
 
-authenticator = stauth.Authenticate(credentials= credentials, cookie_name="st_session", cookie_key="key123", cookie_expiry_days= 1)
+authenticator = stauth.Authenticate(credentials= credentials, cookie_name="st_session", cookie_key="key123", cookie_expiry_days= 2)
 authenticator.login()
 
 mongo_user = st.secrets['MONGO_USER']
