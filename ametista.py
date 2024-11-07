@@ -289,9 +289,9 @@ def tabs():
 def pagina_principal():
     logo = "files/logo.png"
     st.title('Ametista Store')
-    btn = authenticator.logout()
-    if btn:
-        st.session_state["authentication_status"] == None
+    #btn = authenticator.logout()
+    #if btn:
+    #    st.session_state["authentication_status"] == None
     #visualiza_dados()
     st.divider()
     estoque()
