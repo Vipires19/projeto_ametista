@@ -30,7 +30,7 @@ credentials = {
     }
 }
 
-authenticator = stauth.Authenticate(credentials= credentials, cookie_name="st_session", cookie_key="key123", cookie_expiry_days= 2)
+authenticator = stauth.Authenticate(credentials= credentials, cookie_name="st_session", cookie_key="key123", cookie_expiry_days= 1)
 authenticator.login()
 
 mongo_user = st.secrets['MONGO_USER']
@@ -43,8 +43,7 @@ st.cache_resource = client
 db = client.ametista
 coll = db.estoque
 coll2 = db.vendas
-#coll3 = db.organizacao_dividas
-#coll4 = db.historico_atendimento
+
 
 fuso_horario_brasilia = pytz.timezone("America/Sao_Paulo")
 
@@ -214,6 +213,7 @@ def vendas():
         codigos = df_venda['Código'].value_counts().index
         for codigo in codigos:
             coll.delete_one({'Código' : codigo})
+        st.rerun()
 
 def historico():
     hist = coll2.find({})
@@ -231,12 +231,13 @@ def visualiza_dados():
     histdf = []
     for item in hist:
         histdf.append(item)
-    df_vendas = pd.DataFrame(histdf, columns= ['_id', 'Cliente', 'Forma de pagamento','Valor','Entrega', 'Valor Final', 'Data da venda', 'Mês da venda', 'Ano'])
-    df_vendas.drop(columns='_id', inplace=True)
-    
-    mes = {'1': 'Janeiro', '2' :'Fevereiro', '3': 'Março', '4': 'Abril', '5': 'Maio', '6' : 'Junho', '7' : 'Julho', '8' : 'Agosto', '9' : 'Setembro', '10' : 'Outubro', '11' : 'Novembro', '12' : 'Dezembro'}
+    df_vendas = pd.DataFrame(histdf, columns= ['Cliente', 'Forma de pagamento','Valor','Entrega', 'Valor Final', 'Data da venda', 'Mês da venda', 'Ano','Venda','_id'])
+
+    mes = {'01': 'Janeiro', '02' :'Fevereiro', '03': 'Março', '04': 'Abril', '05': 'Maio', '06' : 'Junho', '07' : 'Julho', '08' : 'Agosto', '09' : 'Setembro', '10' : 'Outubro', '11' : 'Novembro', '12' : 'Dezembro'}
     df_vendas['Mês da venda'] = df_vendas['Mês da venda'].map(mes)
+
     st.title('Financeiro')
+
     col1,col2 = st.columns(2)
     ano = df_vendas['Ano'].value_counts().index
     anos = col1.selectbox('Selecione um ano:', ano)
@@ -244,7 +245,7 @@ def visualiza_dados():
     mes = df_ano['Mês da venda'].value_counts().index
     mes_pesquisa = col2.selectbox('Selecione um Mês:', mes)
     df_mes_1 = df_ano[df_ano['Mês da venda'] == mes_pesquisa]
-    df_mes = df_mes_1[['Cliente', 'Forma de pagamento', 'Valor', 'Entrega', 'Valor Final', 'Data da venda']]
+    df_mes = df_mes_1[['Cliente', 'Forma de pagamento', 'Valor', 'Entrega', 'Valor Final', 'Data da venda', '_id']]
     col1,col2,col3,col4,col5 = st.columns(5)
     col1.metric('Numero de pedido no mês', df_mes['Cliente'].value_counts().values.sum())
     col2.metric('Cliente com mais pedidos', df_mes['Cliente'].value_counts().index[0])
@@ -254,6 +255,18 @@ def visualiza_dados():
     col3.dataframe(df_pagamento)
     col4.metric('Valor vendido', f'R$ {df_mes['Valor Final'].sum():,.2f}')
 
+    df_mes
+    
+    id = df_mes['_id'].value_counts().index
+    ids = st.selectbox('Selecione venda', id)
+    item = []
+
+    for i in histdf:
+        if i['_id'] == ids:
+            item.append(i['Venda'])
+    df_itens = pd.DataFrame(item[0], columns= ['Código','Descrição','Tamanho','Valor','Desconto','Final'])
+    df_itens[['Código','Descrição','Tamanho','Valor']]
+    
 def tabs():
     df = st.session_state['estoque']
     df_2 = st.session_state['estoque_2']
@@ -292,7 +305,8 @@ def pagina_principal():
     btn = authenticator.logout()
     if btn:
         st.session_state["authentication_status"] == None
-    
+    #visualiza_dados()
+    st.divider()
     estoque()
     tabs()
 
