@@ -43,6 +43,7 @@ st.cache_resource = client
 db = client.ametista
 coll = db.estoque
 coll2 = db.vendas
+coll3 = db.financeiro
 
 
 fuso_horario_brasilia = pytz.timezone("America/Sao_Paulo")
@@ -213,8 +214,42 @@ def vendas():
         codigos = df_venda['Código'].value_counts().index
         for codigo in codigos:
             coll.delete_one({'Código' : codigo})
+            
+        entry2 = {'Tipo' : 'Venda',
+                  'Valor' : sell.get('Valor Final'),
+                  'Data da venda' : sell.get('Data da venda'),
+                  'Mês da venda': sell.get('Mês da venda'),
+                  'Ano' : sell.get('Ano')}
+        coll3.insert_many([entry2])
+        
         st.rerun()
 
+def gastos():
+    col1,col2,col3 = st.columns(3)
+    gasto = col1.text_input('Gasto')
+    origem = col2.selectbox('Origem', ['Vini', 'Nena', 'Ametista'])
+    valor_gasto = col3.number_input('Valor')
+
+    gastando = {'Tipo' : 'Gasto',
+                'Gasto' : gasto,
+                'Origem' : origem,
+                'Valor' : valor_gasto}
+    
+    despesa = st.button('Confirmar Despesa')
+    if despesa:
+        tempo_agora = datetime.now(fuso_horario_brasilia)
+        data_utc = tempo_agora
+        if isinstance(data_utc, datetime):
+            data_brasilia = data_utc.astimezone(fuso_horario_brasilia)
+            tempo_agora = data_brasilia.strftime('%d')
+            mes_agora = data_brasilia.strftime('%m')
+            ano_agora = data_brasilia.strftime('%Y')
+        gastando.update({'Data da venda' : tempo_agora,
+                    'Mês da venda': mes_agora,
+                    'Ano' : ano_agora})
+        entry = [gastando]
+        coll3.insert_many(entry)
+    
 def historico():
     hist = coll2.find({})
     histdf = []
@@ -236,17 +271,49 @@ def visualiza_dados():
     mes = {'01': 'Janeiro', '02' :'Fevereiro', '03': 'Março', '04': 'Abril', '05': 'Maio', '06' : 'Junho', '07' : 'Julho', '08' : 'Agosto', '09' : 'Setembro', '10' : 'Outubro', '11' : 'Novembro', '12' : 'Dezembro'}
     df_vendas['Mês da venda'] = df_vendas['Mês da venda'].map(mes)
 
-    st.title('Financeiro')
+    hist2 = coll3.find({})
+    hist2df = []
+    for item in hist2:
+        hist2df.append(item)
+    df_finance = pd.DataFrame(hist2df, columns= ['Tipo', 'Gasto','Origem','Valor','Data da venda','Mês da venda','Ano'])
+    
+    mes = {'01': 'Janeiro', '02' :'Fevereiro', '03': 'Março', '04': 'Abril', '05': 'Maio', '06' : 'Junho', '07' : 'Julho', '08' : 'Agosto', '09' : 'Setembro', '10' : 'Outubro', '11' : 'Novembro', '12' : 'Dezembro'}
+    df_finance['Mês da venda'] = df_finance['Mês da venda'].map(mes)
 
+    df_gasto = df_finance[df_finance['Tipo'] == 'Gasto']
+    df_lucro = df_finance[df_finance['Tipo'] == 'Venda']
+
+
+    st.title('Financeiro')
+    
+    st.divider()
+    
     col1,col2 = st.columns(2)
     ano = df_vendas['Ano'].value_counts().index
     anos = col1.selectbox('Selecione um ano:', ano)
+    df_ano_gasto = df_gasto[df_gasto['Ano'] == anos]
     df_ano = df_vendas[df_vendas['Ano'] == anos]
     mes = df_ano['Mês da venda'].value_counts().index
     mes_pesquisa = col2.selectbox('Selecione um Mês:', mes)
+    df_mes_gasto = df_gasto[df_gasto['Mês da venda'] == mes_pesquisa]
     df_mes_1 = df_ano[df_ano['Mês da venda'] == mes_pesquisa]
     df_mes = df_mes_1[['Cliente', 'Forma de pagamento', 'Valor', 'Entrega', 'Valor Final', 'Data da venda', '_id']]
-    col1,col2,col3,col4,col5 = st.columns(5)
+    
+    st.divider()
+    col1,col2,col3,col4 = st.columns(4)
+    lucro_mes = df_mes['Valor Final'].sum() - df_mes_gasto['Valor'].sum()
+    saldo_inicial = 310.53 
+    saldo = saldo_inicial + df_lucro['Valor'].sum() - df_gasto['Valor'].sum()
+    col1.metric('Saldo Ametista', f'R$ {saldo :,.2f}')
+    col2.metric('Valor vendido', f'R$ {df_mes['Valor Final'].sum():,.2f}')
+    col3.metric('Gastos', f'R$ {df_mes_gasto['Valor'].sum():,.2f}')
+    col4.metric('Lucro', f'R$ {lucro_mes:,.2f}')
+
+    st.divider()
+
+    st.title('Vendas da loja')
+    
+    col1,col2,col3,col4 = st.columns(4)
     col1.metric('Numero de pedido no mês', df_mes['Cliente'].value_counts().values.sum())
     col2.metric('Cliente com mais pedidos', df_mes['Cliente'].value_counts().index[0])
     col3.markdown('Formas de pagamento mais utilizadas:')
@@ -266,7 +333,14 @@ def visualiza_dados():
             item.append(i['Venda'])
     df_itens = pd.DataFrame(item[0], columns= ['Código','Descrição','Tamanho','Valor','Desconto','Final'])
     df_itens[['Código','Descrição','Tamanho','Valor']]
-    
+
+    st.divider()
+    st.title('Gastos da loja')
+    gastos()
+    df_gasto = df_finance.dropna()
+    df_gasto
+
+
 def tabs():
     df = st.session_state['estoque']
     df_2 = st.session_state['estoque_2']
