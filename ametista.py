@@ -305,7 +305,7 @@ def visualiza_dados():
     saldo_inicial = 310.53 
     saldo = saldo_inicial + df_lucro['Valor'].sum() - df_gasto['Valor'].sum()
     col1.metric('Saldo Ametista', f'R$ {saldo :,.2f}')
-    col2.metric('Valor vendido', f'R$ {df_mes['Valor Final'].sum():,.2f}')
+    col2.metric('Valor vendido', f'R$ {df_mes[df_mes['Valor Final']].sum():,.2f}')
     col3.metric('Gastos', f'R$ {df_mes_gasto['Valor'].sum():,.2f}')
     col4.metric('Lucro', f'R$ {lucro_mes:,.2f}')
 
