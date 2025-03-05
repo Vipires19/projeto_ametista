@@ -322,7 +322,8 @@ def visualiza_dados():
     df_pagamento = pd.DataFrame(df_mes['Forma de pagamento'].value_counts())
     df_pagamento.rename(columns={'count':'Quantidade'}, inplace=True)
     col3.dataframe(df_pagamento)
-    col4.metric('Valor vendido', f'R$ {df_mes['Valor Final'].sum():,.2f}')
+    valor_vend = df_mes['Valor Final'].sum()
+    col4.metric('Valor vendido', f'R$ {valor_vend:,.2f}')
 
     df_mes
     
